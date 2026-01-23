@@ -1,6 +1,6 @@
 # MCP Server Playbook
 
-last-update: 2026-01-23T10:26:46-0500
+last-update: 2026-01-23T11:15:07-0500
 Author: Harold Campbell (harold.campbell@gmail.com)
 
 This playbook captures project rules, architecture decisions, and a repeatable workflow for building new MCP servers quickly and safely. It is based on the repository docs, specs, and ADRs, and is intentionally general (not vendor-specific).
@@ -47,7 +47,12 @@ This project can be packaged into a standalone macOS CLI binary using PyInstalle
 Use the repository root (the folder that contains `src/`, `tests/`, `README.md`, etc.) as the project
 directory. Run commands either from that root or with `--project /absolute/path/to/repo-root`.
 
-#### One-time setup (add PyInstaller)
+#### Packaging inputs (pyproject-only)
+
+- The canonical dependency source is `pyproject.toml` (do not use `requirements.txt`).
+- Sync environments from `pyproject.toml` with `uv sync` (and `--group dev` when building).
+
+#### One-time setup (add PyInstaller to dev group)
 
 ```bash
 uv --project /absolute/path/to/repo-root add --dev pyinstaller
@@ -57,6 +62,7 @@ uv --project /absolute/path/to/repo-root sync --group dev
 #### Build the binary
 
 ```bash
+uv --project /absolute/path/to/repo-root sync --group dev
 uv --project /absolute/path/to/repo-root run pyinstaller \
   --onefile \
   --name my_server \
@@ -72,6 +78,16 @@ If you want a different output directory, add --distpath /absolute/path/to/dist.
 uv --project /absolute/path/to/repo-root run pyinstaller my_server.spec
 ```
 
+#### Spec guidance (datas + hidden imports)
+
+- Prefer a spec that auto-collects datas, binaries, and hidden imports from the PyInstaller analysis graph.
+- Seed the analysis with any known required metadata (use distribution names; e.g., `copy_metadata("mcp")`,
+  optionally `copy_metadata("fastmcp")` if present) and known hidden
+  imports (e.g., `lupa` modules) before auto-collecting.
+- Use a two-pass Analysis pattern: initial `Analysis` (seeded), then collect packages, then a final `Analysis`
+  with the combined datas/binaries/hidden imports.
+- Check `build/<name>/warn-<name>.txt` after each build for missing modules/data and add explicit fixes.
+
 #### Build with the script
 
 ```bash
@@ -79,6 +95,39 @@ uv --project /absolute/path/to/repo-root run pyinstaller my_server.spec
 ```
 
 The script installs dev dependencies, cleans `build/` and `dist/`, and then runs PyInstaller.
+Create this script in each MCP server repo to standardize builds. Use a pattern that:
+
+- Resolves the repo root reliably (`pwd -P`).
+- Runs `uv sync --group dev` before building.
+- Cleans `build/` and `dist/` under the repo root.
+- Supports `DIST_PATH` to override the output directory via `--distpath`.
+- Invokes PyInstaller with the repo's `.spec` file (spec stays authoritative).
+
+Template:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+DIST_PATH="${DIST_PATH:-}"
+
+echo "Building <server-name> from: ${ROOT_DIR}"
+
+(
+  cd "${ROOT_DIR}"
+
+  uv sync --group dev
+
+  rm -rf "${ROOT_DIR}/build" "${ROOT_DIR}/dist"
+
+  if [[ -n "${DIST_PATH}" ]]; then
+    uv run pyinstaller --distpath "${DIST_PATH}" <server-name>.spec
+  else
+    uv run pyinstaller <server-name>.spec
+  fi
+)
+```
 
 #### Run the binary
 
@@ -99,7 +148,7 @@ MY_API_TOKEN_FILE=/path/to/token ./dist/my_server
 - Build on the same CPU architecture you want to support (arm64 vs x86_64).
 - For a universal binary, build for each architecture and combine using a universal build workflow.
 - If you hit `ModuleNotFoundError: No module named 'lupa.lua51'` when running the binary, ensure `lupa` is
-  installed at build time and rebuild using `my_serverr.spec` (the spec includes the required
+  installed at build time and rebuild using `my_server.spec` (the spec includes the required
   hidden imports).
 - If you hit `FileNotFoundError` for `fakeredis` `commands.json`, rebuild using `my_server.spec`
   (it includes the `fakeredis` data files required at runtime).
