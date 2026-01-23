@@ -1,6 +1,6 @@
 # MCP Server Playbook
 
-last-update: 2026-01-23T11:15:07-0500
+last-update: 2026-01-23T12:00:00-0500
 Author: Harold Campbell (harold.campbell@gmail.com)
 
 This playbook captures project rules, architecture decisions, and a repeatable workflow for building new MCP servers quickly and safely. It is based on the repository docs, specs, and ADRs, and is intentionally general (not vendor-specific).
@@ -59,7 +59,7 @@ uv --project /absolute/path/to/repo-root add --dev pyinstaller
 uv --project /absolute/path/to/repo-root sync --group dev
 ```
 
-#### Build the binary
+#### Build the binary (onefile)
 
 ```bash
 uv --project /absolute/path/to/repo-root sync --group dev
@@ -71,6 +71,25 @@ uv --project /absolute/path/to/repo-root run pyinstaller \
 
 Output binary: dist/my_server (created in the project root by default).
 If you want a different output directory, add --distpath /absolute/path/to/dist.
+
+#### Build the binary (onedir, faster startup)
+
+Use onedir to avoid onefile extraction overhead at startup. This produces a directory
+with the executable and bundled dependencies.
+
+```bash
+uv --project /absolute/path/to/repo-root sync --group dev
+uv --project /absolute/path/to/repo-root run pyinstaller \
+  --onedir \
+  --name my_server \
+  src/server.py
+```
+
+Run it like:
+
+```bash
+./dist/my_server/my_server
+```
 
 #### Build with a spec
 
@@ -96,12 +115,14 @@ uv --project /absolute/path/to/repo-root run pyinstaller my_server.spec
 
 The script installs dev dependencies, cleans `build/` and `dist/`, and then runs PyInstaller.
 Create this script in each MCP server repo to standardize builds. Use a pattern that:
-
 - Resolves the repo root reliably (`pwd -P`).
 - Runs `uv sync --group dev` before building.
 - Cleans `build/` and `dist/` under the repo root.
 - Supports `DIST_PATH` to override the output directory via `--distpath`.
 - Invokes PyInstaller with the repo's `.spec` file (spec stays authoritative).
+
+For faster startup times, add a companion onedir script (example name: `build_dist_onedir.sh`)
+that uses a dedicated onedir spec and produces `dist/<name>/<name>`.
 
 Template:
 
