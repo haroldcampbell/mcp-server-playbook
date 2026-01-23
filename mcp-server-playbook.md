@@ -59,17 +59,17 @@ uv --project /absolute/path/to/repo-root sync --group dev
 ```bash
 uv --project /absolute/path/to/repo-root run pyinstaller \
   --onefile \
-  --name hubspot-mcp-server \
+  --name my_server \
   src/server.py
 ```
 
-Output binary: dist/hubspot-mcp-server (created in the project root by default).
+Output binary: dist/my_server (created in the project root by default).
 If you want a different output directory, add --distpath /absolute/path/to/dist.
 
 #### Build with a spec
 
 ```bash
-uv --project /absolute/path/to/repo-root run pyinstaller hubspot-mcp-server.spec
+uv --project /absolute/path/to/repo-root run pyinstaller my_server.spec
 ```
 
 #### Build with the script
@@ -83,7 +83,7 @@ The script installs dev dependencies, cleans `build/` and `dist/`, and then runs
 #### Run the binary
 
 ```bash
-./dist/hubspot-mcp-server
+./dist/my_server
 ```
 
 #### Environment variables still work
@@ -91,7 +91,7 @@ The script installs dev dependencies, cleans `build/` and `dist/`, and then runs
 PyInstaller binaries read env vars normally:
 
 ```bash
-HUBSPOT_ACCESS_TOKEN_FILE=/path/to/token ./dist/hubspot-mcp-server
+MY_API_TOKEN_FILE=/path/to/token ./dist/my_server
 ```
 
 #### Notes
@@ -99,9 +99,9 @@ HUBSPOT_ACCESS_TOKEN_FILE=/path/to/token ./dist/hubspot-mcp-server
 - Build on the same CPU architecture you want to support (arm64 vs x86_64).
 - For a universal binary, build for each architecture and combine using a universal build workflow.
 - If you hit `ModuleNotFoundError: No module named 'lupa.lua51'` when running the binary, ensure `lupa` is
-  installed at build time and rebuild using `hubspot-mcp-server.spec` (the spec includes the required
+  installed at build time and rebuild using `my_serverr.spec` (the spec includes the required
   hidden imports).
-- If you hit `FileNotFoundError` for `fakeredis` `commands.json`, rebuild using `hubspot-mcp-server.spec`
+- If you hit `FileNotFoundError` for `fakeredis` `commands.json`, rebuild using `my_server.spec`
   (it includes the `fakeredis` data files required at runtime).
 - The spec auto-discovers package data and hidden imports from the PyInstaller analysis graph to reduce
   one-off packaging fixes and keep the bundle smaller.
