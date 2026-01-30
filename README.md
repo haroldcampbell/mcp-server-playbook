@@ -13,16 +13,12 @@ across projects.
 
 ## How to use this playbook
 
-1. Read the playbook:
-   - Open `mcp-server-playbook.md` and follow the recommended steps and
-     guidance in order.
-2. Apply it to a project:
-   - Use the sections as a checklist while designing or reviewing an MCP
-     server.
-   - Adopt the packaging and deployment guidance to standardize releases.
+1. Have codex: Read the playbook, then create a scaffolded project based on its
+   contents.
+2. Ensure that the guardrails enforce the proper handling of secrets
 3. Keep it current:
-   - Update the playbook when your team discovers new patterns or when
-     upstream tooling changes.
+   - Update the playbook when your discovers new patterns or when upstream
+     tooling changes.
 
 ## Contents
 
